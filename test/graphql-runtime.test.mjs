@@ -23,6 +23,7 @@ import {
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GraphQLError } from "graphql";
+import { NotFoundException } from "@nestjs/common";
 
 test("all platform enums are registered deterministically and idempotently", () => {
   registerOmnixysGraphQLEnums();
@@ -89,8 +90,13 @@ test("structured domain errors map to stable GraphQL extensions", () => {
   assert.equal(formatted.extensions.requestId, "request-domain");
   assert.equal(formatted.extensions.correlationId, "correlation-domain");
   assert.equal(formatted.extensions.traceId, "trace-domain");
-  assert.equal(formatted.extensions.actorId, "actor-domain");
-  assert.equal(formatted.extensions.tenantId, "tenant-domain");
+  assert.equal("actorId" in formatted.extensions, false);
+  assert.equal("tenantId" in formatted.extensions, false);
+  assert.equal(formatted.extensions.httpStatus, 404);
+  assert.equal(formatted.extensions.retryable, false);
+  assert.equal(formatted.extensions.summary, "User not found.");
+  assert.equal(typeof formatted.extensions.service, "string");
+  assert.equal(typeof formatted.extensions.operation, "string");
   assert.deepEqual(formatted.extensions.metadata, { userId: "user-1" });
   assert.match(formatted.extensions.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 });
@@ -107,7 +113,6 @@ test("typed GraphQL exceptions expose codes and redact sensitive details", () =>
   assert.deepEqual(error.extensions.metadata, {
     seatId: "seat-1",
     sectionId: "section-1",
-    nested: { row: 2 },
   });
   assert.match(error.extensions.timestamp, /^\d{4}-\d{2}-\d{2}T/);
 });
@@ -149,15 +154,28 @@ test("unknown resolver errors are redacted but retain canonical diagnostics", ()
         new Error("database password leaked"),
       );
 
-      assert.equal(formatted.message, "Internal server error");
+      assert.equal(formatted.message, "An unexpected error occurred.");
       assert.equal(formatted.extensions.code, "INTERNAL_SERVER_ERROR");
       assert.equal(formatted.extensions.requestId, "request-1");
       assert.equal(formatted.extensions.correlationId, "correlation-1");
       assert.equal(formatted.extensions.traceId, "trace-1");
-      assert.equal(formatted.extensions.actorId, "actor-1");
-      assert.equal(formatted.extensions.tenantId, "tenant-1");
+      assert.equal("actorId" in formatted.extensions, false);
+      assert.equal("tenantId" in formatted.extensions, false);
+      assert.equal(formatted.extensions.httpStatus, 500);
     },
   );
+});
+
+test("legacy Nest HTTP exceptions receive stable GraphQL codes", () => {
+  const exception = new NotFoundException("Report not found.");
+  const formatted = createGraphQLFormatError({ serviceName: "blog" })(
+    { message: exception.message, extensions: {} },
+    new GraphQLError(exception.message, { originalError: exception }),
+  );
+
+  assert.equal(formatted.extensions.code, "NOT_FOUND");
+  assert.equal(formatted.extensions.httpStatus, 404);
+  assert.equal(formatted.message, "Report not found.");
 });
 
 test("compatibility security errors now include canonical identifiers", () => {
@@ -169,13 +187,13 @@ test("compatibility security errors now include canonical identifiers", () => {
       assert.equal(error.extensions.code, "ACCESS_BLOCKED");
       assert.equal(error.extensions.requestId, "request-2");
       assert.equal(error.extensions.correlationId, "correlation-2");
-      assert.deepEqual(error.extensions.reasons, ["risk"]);
-      assert.deepEqual(error.extensions.metadata, { reasons: ["risk"] });
+      assert.equal("reasons" in error.extensions, false);
+      assert.deepEqual(error.extensions.metadata, {});
     },
   );
 });
 
-test("GraphQL exception filter maps and logs resolver failures", () => {
+test("GraphQL exception filter maps without duplicating request error logs", () => {
   const calls = [];
   const logger = {
     child() {
@@ -196,7 +214,55 @@ test("GraphQL exception filter maps and logs resolver failures", () => {
 
   assert.equal(mapped.extensions.code, "UNAUTHORIZED_TENANT");
   assert.equal(mapped.extensions.requestId, "request-3");
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 0);
+});
+
+test("GraphQL extensions contain only the public error contract", () => {
+  const cause = Object.assign(new Error("database password leaked"), {
+    response: { data: { client_secret: "must-not-leak" } },
+  });
+  const domainError = Object.assign(
+    new Error("The requested user was not found."),
+    {
+      code: "USER_NOT_FOUND",
+      summary: "User lookup failed.",
+      httpStatus: 404,
+      retryable: false,
+      actorId: "actor-secret",
+      tenantId: "tenant-secret",
+      metadata: {
+        userId: "user-1",
+        password: "must-not-leak",
+        sql: "select *",
+      },
+      diagnostics: { sql: "select *" },
+      cause,
+    },
+  );
+  const mapped = GraphQLExceptionFilter.prototype.catch.call(
+    new GraphQLExceptionFilter(),
+    domainError,
+  );
+
+  assert.deepEqual(Object.keys(mapped.extensions).sort(), [
+    "code",
+    "correlationId",
+    "httpStatus",
+    "metadata",
+    "operation",
+    "requestId",
+    "retryable",
+    "service",
+    "summary",
+    "timestamp",
+    "traceId",
+  ].filter((key) => mapped.extensions[key] !== undefined).sort());
+  assert.deepEqual(mapped.extensions.metadata, { userId: "user-1" });
+  const json = JSON.stringify(mapped);
+  assert.equal(json.includes("actor-secret"), false);
+  assert.equal(json.includes("tenant-secret"), false);
+  assert.equal(json.includes("must-not-leak"), false);
+  assert.equal(json.includes("select *"), false);
 });
 
 test("federation configuration is production-safe and override-compatible", () => {
