@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.1](https://github.com/omnixys/graphql-ts/compare/v3.1.0...v3.1.1) (2026-07-30)
+
+### Deps
+
+* **Deps:** fix imports ([](https://github.com/omnixys/graphql-ts/commit/ebc5adf8ee73cd2f59b856f09894a8c1b251ee33))
+
 ## [3.1.0](https://github.com/omnixys/graphql-ts/compare/v3.0.1...v3.1.0) (2026-07-30)
 
 ### ⚠ BREAKING CHANGE
