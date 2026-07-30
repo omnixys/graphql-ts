@@ -3,6 +3,20 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.0](https://github.com/omnixys/graphql-ts/compare/v3.0.1...v3.1.0) (2026-07-30)
+
+### ⚠ BREAKING CHANGE
+
+* **Errors:** unsafe and compatibility-only GraphQL extensions are no longer returned to clients.
+
+### Deps
+
+* **Deps:** fix imports ([](https://github.com/omnixys/graphql-ts/commit/ff275f97436e06338bb96c7979486438f1ecabd3))
+
+### Errors
+
+* **Errors:** enforce secure GraphQL error envelope ([](https://github.com/omnixys/graphql-ts/commit/9e3c853914b4b55184121e6b6203095fc3082016))
+
 ## [3.0.1](https://github.com/omnixys/graphql/compare/v3.0.0...v3.0.1) (2026-07-23)
 
 ### Deps
