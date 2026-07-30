@@ -1,6 +1,6 @@
 import { Field, InputType, ID } from "@nestjs/graphql";
 import { IsEnum, IsOptional } from "class-validator";
-import { PersonStatusType, UserType } from "@omnixys/contracts";
+import { PersonStatusType, UserType } from "@omnixys/contracts-ts";
 import { PersonalInfoInput } from "../register/personal-info.input.js";
 
 @InputType()

@@ -1,4 +1,4 @@
-import { ErrorCode } from "@omnixys/contracts";
+import { ErrorCode } from "@omnixys/contracts-ts";
 import { BaseGraphQLException } from "./graphql-exception.mapper.js";
 
 export type GraphQLExceptionDetails = Readonly<Record<string, unknown>>;

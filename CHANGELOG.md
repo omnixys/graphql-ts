@@ -98,7 +98,7 @@ with authentication, context, and observability layers.
 ### Graphql
 
 * **Graphql:** unified GraphQL foundation, federation types & NestJS module ([](https://github.com/omnixys/graphql/commit/8852b984c679bb920f61d54256a42537b111b294))
-* **Graphql:** unify enum registration via @omnixys/graphql to avoid type resolution errors ([](https://github.com/omnixys/graphql/commit/2e818c7bf8be866786b3dca558e2c4e47df19b28))
+* **Graphql:** unify enum registration via @omnixys/graphql-ts to avoid type resolution errors ([](https://github.com/omnixys/graphql/commit/2e818c7bf8be866786b3dca558e2c4e47df19b28))
 
 ### Initial commit
 
@@ -128,7 +128,7 @@ with authentication, context, and observability layers.
 
 ### Graphql
 
-* **Graphql:** unify enum registration via @omnixys/graphql to avoid type resolution errors ([](https://github.com/omnixys/graphql/commit/2e818c7bf8be866786b3dca558e2c4e47df19b28))
+* **Graphql:** unify enum registration via @omnixys/graphql-ts to avoid type resolution errors ([](https://github.com/omnixys/graphql/commit/2e818c7bf8be866786b3dca558e2c4e47df19b28))
 
 ### Other
 

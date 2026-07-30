@@ -5,7 +5,7 @@ import {
   ID,
   ObjectType,
 } from "@nestjs/graphql";
-import { PhoneNumberType } from "@omnixys/contracts";
+import { PhoneNumberType } from "@omnixys/contracts-ts";
 import { IsOptional, IsString } from "class-validator";
 
 /**

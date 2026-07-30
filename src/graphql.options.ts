@@ -1,5 +1,5 @@
 import type { ApolloFederationDriverConfig } from "@nestjs/apollo";
-import type { GqlFastifyContext } from "@omnixys/context";
+import type { GqlFastifyContext } from "@omnixys/context-ts";
 import { createGraphQLFormatError } from "./error/graphql-exception.mapper.js";
 
 export function createGraphQLConfig(

@@ -1,4 +1,4 @@
-import { ContextAccessor } from "@omnixys/context";
+import { ContextAccessor } from "@omnixys/context-ts";
 import { LazyMetadataStorage } from "@nestjs/graphql/dist/schema-builder/storages/lazy-metadata.storage.js";
 import { TypeMetadataStorage } from "@nestjs/graphql/dist/schema-builder/storages/type-metadata.storage.js";
 import {

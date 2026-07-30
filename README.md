@@ -1,4 +1,4 @@
-# 📦 `@omnixys/graphql`
+# 📦 `@omnixys/graphql-ts`
 
 Shared GraphQL Types, Inputs, Enums und Federation-Objekte für das Omnixys Microservice-Ökosystem.
 
@@ -8,7 +8,7 @@ Dieses Package stellt eine zentrale, wiederverwendbare GraphQL-Schema-Definition
 
 ## 🎯 Zweck
 
-`@omnixys/graphql` dient als **Transport-Layer-Definition** zwischen Services.
+`@omnixys/graphql-ts` dient als **Transport-Layer-Definition** zwischen Services.
 
 Es enthält:
 
@@ -29,8 +29,8 @@ Es enthält:
 In der Omnixys-Architektur ist dieses Package:
 
 ```text
-@omnixys/contracts   → Domain + Events (framework-agnostisch)
-@omnixys/graphql     → GraphQL Transport Schema
+@omnixys/contracts-ts   → Domain + Events (framework-agnostisch)
+@omnixys/graphql-ts     → GraphQL Transport Schema
 Service Layer        → Business Logic
 Infrastructure       → DB, Kafka, Cache
 ```
@@ -70,13 +70,13 @@ src/
 ## 📦 Installation
 
 ```bash
-pnpm add @omnixys/graphql
+pnpm add @omnixys/graphql-ts
 ```
 
 Oder bei Workspace:
 
 ```bash
-pnpm add @omnixys/graphql -w
+pnpm add @omnixys/graphql-ts -w
 ```
 
 ---
@@ -117,7 +117,7 @@ export class AddressInput {
 ## 🏗 Verwendung im Service
 
 ```ts
-import { AddressInput } from '@omnixys/graphql';
+import { AddressInput } from '@omnixys/graphql-ts';
 
 @Mutation(() => Boolean)
 createAddress(
@@ -155,13 +155,13 @@ Federation-Direktiven gehören ebenfalls in dieses Package, damit:
 
 ## ⚠ Design-Regeln
 
-`@omnixys/graphql` darf:
+`@omnixys/graphql-ts` darf:
 
 - NestJS GraphQL verwenden
 - Federation Directives verwenden
-- Enums aus `@omnixys/contracts` importieren
+- Enums aus `@omnixys/contracts-ts` importieren
 
-`@omnixys/graphql` darf NICHT:
+`@omnixys/graphql-ts` darf NICHT:
 
 - Prisma importieren
 - Services importieren
@@ -193,7 +193,7 @@ Für Sicherheitsmeldungen siehe SECURITY.md .
 ## Typed exception mapping
 
 Services throw transport-neutral `FrameworkException` instances from
-`@omnixys/contracts`. `GraphQLExceptionFilter`, `toGraphQLError`, and the
+`@omnixys/contracts-ts`. `GraphQLExceptionFilter`, `toGraphQLError`, and the
 configured formatter preserve the stable code and expose this client contract:
 
 ```ts

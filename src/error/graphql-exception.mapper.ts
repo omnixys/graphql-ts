@@ -1,13 +1,13 @@
 import { Catch, HttpException, Optional } from "@nestjs/common";
-import { ContextAccessor } from "@omnixys/context";
+import { ContextAccessor } from "@omnixys/context-ts";
 import {
   ErrorCode,
   getErrorDefinition,
   getPublicErrorMetadata,
   isKnownErrorCode,
-} from "@omnixys/contracts";
+} from "@omnixys/contracts-ts";
 import { GqlExceptionFilter } from "@nestjs/graphql";
-import { OmnixysLogger } from "@omnixys/logger";
+import { OmnixysLogger } from "@omnixys/logger-ts";
 import { GraphQLError, type GraphQLFormattedError } from "graphql";
 
 export interface FrameworkErrorLike {
