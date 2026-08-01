@@ -3,6 +3,16 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.2](https://github.com/omnixys/graphql-ts/compare/v3.1.1...v3.1.2) (2026-08-01)
+
+### Deps
+
+* **Deps:** update omnixs package deps ([](https://github.com/omnixys/graphql-ts/commit/0111185b87a87df25babbdaefd7e64ced0413396))
+
+### Name
+
+* **Name:** update package name ([](https://github.com/omnixys/graphql-ts/commit/e62caa734cba47cae3f36516a109c4de86e8b4c1))
+
 ## [3.1.1](https://github.com/omnixys/graphql-ts/compare/v3.1.0...v3.1.1) (2026-07-30)
 
 ### Deps
