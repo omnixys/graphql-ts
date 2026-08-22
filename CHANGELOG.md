@@ -3,6 +3,16 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.3](https://github.com/omnixys/graphql-ts/compare/v3.1.2...v3.1.3) (2026-08-22)
+
+### Agent
+
+* **Agent:** add repository development instructions ([](https://github.com/omnixys/graphql-ts/commit/b2ffdcdefe71046e2b4edb66b84c4c35ddd44552))
+
+### Dir
+
+* **Dir:** remove target dir ([](https://github.com/omnixys/graphql-ts/commit/2e9ffdbdc3851287584048e2c5fa8f71fd5b642e))
+
 ## [3.1.2](https://github.com/omnixys/graphql-ts/compare/v3.1.1...v3.1.2) (2026-08-01)
 
 ### Deps
