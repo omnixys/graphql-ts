@@ -142,6 +142,7 @@ export function toGraphQLError(
       code,
       recordOf(error.extensions.metadata) ?? recordOf(error.extensions.details),
     );
+    const context = errorContext(undefined, error.extensions);
     return new GraphQLError(
       options.exposeInternalErrors || (isKnownErrorCode(rawCode) && httpStatus < 500)
         ? error.message
@@ -160,7 +161,7 @@ export function toGraphQLError(
           booleanOf(error.extensions.retryable) ?? definition.retryable,
         service: serviceOf(options.serviceName),
         operation: operationOf(),
-        ...errorContext(),
+        ...context,
         timestamp: timestampOf(error.extensions.timestamp),
         metadata: meta,
       },
@@ -220,7 +221,7 @@ export function createGraphQLFormatError(
     const code = normalizeGraphQLErrorCode(rawCode, options.serviceName);
     const definition = getErrorDefinition(code);
     const safeClientError = structured !== undefined || isKnownErrorCode(rawCode);
-    const context = errorContext(structured);
+    const context = errorContext(structured, formatted.extensions);
     const meta = publicMetadata(
       code,
       structured?.metadata ??
@@ -352,9 +353,15 @@ function structuredError(value: unknown): FrameworkErrorLike | undefined {
     : undefined;
 }
 
-function errorContext(error?: FrameworkErrorLike) {
+function errorContext(
+  error?: FrameworkErrorLike,
+  formattedExtensions?: Readonly<Record<string, unknown>>,
+) {
   const context = ContextAccessor.get();
-  const traceId = scopedId(error?.traceId) ?? context?.trace?.traceId;
+  const traceId =
+    scopedId(stringOf(formattedExtensions?.traceId)) ??
+    scopedId(error?.traceId) ??
+    context?.trace?.traceId;
   return {
     requestId: scopedId(error?.requestId) ?? context?.requestId ?? "unscoped",
     correlationId:

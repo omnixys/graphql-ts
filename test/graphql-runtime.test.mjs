@@ -138,6 +138,27 @@ test("unscoped domain errors inherit the active canonical context", () => {
   );
 });
 
+test("formatted subgraph trace identifiers survive a missing local context", () => {
+  const formatter = createGraphQLFormatError({
+    preserveSafeSubgraphExtensions: true,
+  });
+  const formatted = formatter(
+    {
+      message: "subgraph failure",
+      extensions: {
+        code: "INTERNAL_SERVER_ERROR",
+        traceId: "7d9f4c5e9a46427a80fd1f7d422abcde",
+      },
+    },
+    new GraphQLError("subgraph failure"),
+  );
+
+  assert.equal(
+    formatted.extensions.traceId,
+    "7d9f4c5e9a46427a80fd1f7d422abcde",
+  );
+});
+
 test("unknown resolver errors are redacted but retain canonical diagnostics", () => {
   ContextAccessor.run(
     {
