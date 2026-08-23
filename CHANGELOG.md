@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.4](https://github.com/omnixys/graphql-ts/compare/v3.1.3...v3.1.4) (2026-08-23)
+
+### Error
+
+* **Error:** update error handling ([](https://github.com/omnixys/graphql-ts/commit/c5e367a00b12bf9c66714ab48b549e48c2e2e8cc))
+
 ## [3.1.3](https://github.com/omnixys/graphql-ts/compare/v3.1.2...v3.1.3) (2026-08-22)
 
 ### Agent
