@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.6](https://github.com/omnixys/graphql-ts/compare/v3.1.5...v3.1.6) (2026-08-23)
+
+### Graphql
+
+* **Graphql:** preserve request trace diagnostics ([](https://github.com/omnixys/graphql-ts/commit/59d8e03035776de0b4588a27209a539b267aefd1))
+
 ## [3.1.5](https://github.com/omnixys/graphql-ts/compare/v3.1.4...v3.1.5) (2026-08-23)
 
 ### Graphql
