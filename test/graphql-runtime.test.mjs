@@ -187,6 +187,21 @@ test("unknown resolver errors are redacted but retain canonical diagnostics", ()
   );
 });
 
+test("wrapped resolver errors retain trace identifiers from originalError", () => {
+  const formatter = createGraphQLFormatError();
+  const original = Object.assign(new Error("database unavailable"), {
+    traceId: "trace-wrapped",
+    spanId: "span-wrapped",
+  });
+  const formatted = formatter(
+    { message: original.message, extensions: {} },
+    new GraphQLError(original.message, { originalError: original }),
+  );
+
+  assert.equal(formatted.extensions.traceId, "trace-wrapped");
+  assert.equal(formatted.extensions.spanId, "span-wrapped");
+});
+
 test("legacy Nest HTTP exceptions receive stable GraphQL codes", () => {
   const exception = new NotFoundException("Report not found.");
   const formatted = createGraphQLFormatError({ serviceName: "blog" })(

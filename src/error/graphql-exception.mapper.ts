@@ -16,6 +16,7 @@ export interface FrameworkErrorLike {
   readonly requestId?: string;
   readonly correlationId?: string;
   readonly traceId?: string;
+  readonly spanId?: string;
   readonly metadata?: Readonly<Record<string, unknown>>;
   readonly summary?: string;
   readonly httpStatus?: number;
@@ -142,7 +143,10 @@ export function toGraphQLError(
       code,
       recordOf(error.extensions.metadata) ?? recordOf(error.extensions.details),
     );
-    const context = errorContext(undefined, error.extensions);
+    const context = errorContext(
+      traceContextOf(error.originalError),
+      error.extensions,
+    );
     return new GraphQLError(
       options.exposeInternalErrors || (isKnownErrorCode(rawCode) && httpStatus < 500)
         ? error.message
@@ -221,7 +225,10 @@ export function createGraphQLFormatError(
     const code = normalizeGraphQLErrorCode(rawCode, options.serviceName);
     const definition = getErrorDefinition(code);
     const safeClientError = structured !== undefined || isKnownErrorCode(rawCode);
-    const context = errorContext(structured, formatted.extensions);
+    const context = errorContext(
+      structured ?? traceContextOf(original),
+      formatted.extensions,
+    );
     const meta = publicMetadata(
       code,
       structured?.metadata ??
@@ -353,6 +360,23 @@ function structuredError(value: unknown): FrameworkErrorLike | undefined {
     : undefined;
 }
 
+function traceContextOf(value: unknown): FrameworkErrorLike | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as {
+    traceId?: unknown;
+    spanId?: unknown;
+  };
+  return typeof candidate.traceId === "string" || typeof candidate.spanId === "string"
+    ? {
+        code: ErrorCode.INTERNAL_SERVER_ERROR,
+        message: "Internal server error",
+        traceId: stringOf(candidate.traceId),
+        spanId: stringOf(candidate.spanId),
+        metadata: {},
+      }
+    : undefined;
+}
+
 function errorContext(
   error?: FrameworkErrorLike,
   formattedExtensions?: Readonly<Record<string, unknown>>,
@@ -362,6 +386,10 @@ function errorContext(
     scopedId(stringOf(formattedExtensions?.traceId)) ??
     scopedId(error?.traceId) ??
     context?.trace?.traceId;
+  const spanId =
+    scopedId(stringOf(formattedExtensions?.spanId)) ??
+    scopedId(error?.spanId) ??
+    context?.trace?.spanId;
   return {
     requestId: scopedId(error?.requestId) ?? context?.requestId ?? "unscoped",
     correlationId:
@@ -370,6 +398,7 @@ function errorContext(
       context?.requestId ??
       "unscoped",
     ...(traceId ? { traceId } : {}),
+    ...(spanId ? { spanId } : {}),
   };
 }
 
