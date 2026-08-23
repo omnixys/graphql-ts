@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.5](https://github.com/omnixys/graphql-ts/compare/v3.1.4...v3.1.5) (2026-08-23)
+
+### Graphql
+
+* **Graphql:** preserve trace context in errors ([](https://github.com/omnixys/graphql-ts/commit/9d5d523f068304fd5bc5655037009d4a2f3fac73))
+
 ## [3.1.4](https://github.com/omnixys/graphql-ts/compare/v3.1.3...v3.1.4) (2026-08-23)
 
 ### Error
