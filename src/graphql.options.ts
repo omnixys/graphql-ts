@@ -1,6 +1,9 @@
 import type { ApolloFederationDriverConfig } from "@nestjs/apollo";
 import type { GqlFastifyContext } from "@omnixys/context-ts";
-import { createGraphQLFormatError } from "./error/graphql-exception.mapper.js";
+import {
+  attachGraphQLErrorRequestContext,
+  createGraphQLFormatError,
+} from "./error/graphql-exception.mapper.js";
 
 export function createGraphQLConfig(
   overrides: Partial<ApolloFederationDriverConfig> = {},
@@ -15,6 +18,23 @@ export function createGraphQLConfig(
     stopOnApplicationShutdown: true,
     inheritResolversFromInterfaces: true,
     formatError: createGraphQLFormatError(),
+    plugins: [
+      {
+        async requestDidStart() {
+          return {
+            async didEncounterErrors(requestContext) {
+              const contextValue = requestContext.contextValue as
+                | { req?: object; request?: object }
+                | undefined;
+              const request = contextValue?.req ?? contextValue?.request;
+              for (const error of requestContext.errors) {
+                attachGraphQLErrorRequestContext(error, request);
+              }
+            },
+          };
+        },
+      },
+    ],
     // @as-integrations/fastify invokes this factory with positional values.
     context: (
       req: GqlFastifyContext["req"],
@@ -29,5 +49,6 @@ export function createGraphQLConfig(
       ...base.buildSchemaOptions,
       ...overrides.buildSchemaOptions,
     },
+    plugins: [...(base.plugins ?? []), ...(overrides.plugins ?? [])],
   };
 }

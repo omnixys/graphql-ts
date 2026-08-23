@@ -1,5 +1,7 @@
 import { Catch, HttpException, Optional } from "@nestjs/common";
 import { ContextAccessor } from "@omnixys/context-ts";
+import { getRequestContextIdentifiers } from "@omnixys/context-ts";
+import { getRequestTraceContext } from "@omnixys/context-ts";
 import {
   ErrorCode,
   getErrorDefinition,
@@ -199,6 +201,11 @@ export function toGraphQLError(
       ? codeForHttpStatus(mappedHttpStatus)
       : internalCodeForService(options.serviceName));
   const definition = getErrorDefinition(code);
+  const operation = operationOf(
+    undefined,
+    undefined,
+    structured ?? traceContextOf(sourceError),
+  );
   const httpStatus =
     structured?.httpStatus ?? mappedHttpStatus ?? definition.httpStatus;
   const message =
@@ -221,8 +228,8 @@ export function toGraphQLError(
       summary: structured?.summary ?? definition.summary,
       httpStatus,
       retryable: structured?.retryable ?? definition.retryable,
-      service: serviceOf(options.serviceName),
-      operation: operationOf(),
+        service: serviceOf(options.serviceName),
+      operation,
       ...context,
       timestamp: new Date().toISOString(),
       metadata: meta,
@@ -328,6 +335,9 @@ function codeForHttpStatus(status: number): ErrorCode {
 }
 
 function normalizeGraphQLErrorCode(code: string, serviceName?: string): string {
+  if (code === ErrorCode.INTERNAL_SERVER_ERROR) {
+    return internalCodeForService(serviceName);
+  }
   if (isKnownErrorCode(code)) return code;
   if (code === "BAD_USER_INPUT" || code === "GRAPHQL_VALIDATION_FAILED") {
     return ErrorCode.VALIDATION_ERROR;
@@ -381,6 +391,39 @@ export class GraphQLExceptionFilter implements GqlExceptionFilter {
   catch(exception: unknown): GraphQLError {
     const mapped = toGraphQLError(exception);
     return mapped;
+  }
+}
+
+/**
+ * Preserves request diagnostics before Apollo leaves Nest's async context.
+ * This also covers errors raised by guards and parameter decorators.
+ */
+export function attachGraphQLErrorRequestContext(
+  error: GraphQLError,
+  request: object | undefined,
+): void {
+  const context = ContextAccessor.get();
+  const trace = getRequestTraceContext(request) ?? context?.trace;
+  const identifiers = getRequestContextIdentifiers(request);
+  const metadata = {
+    requestId: identifiers?.requestId ?? context?.requestId,
+    correlationId: identifiers?.correlationId ?? context?.correlationId,
+    traceId: trace?.traceId,
+    spanId: trace?.spanId,
+  };
+  const extensionTarget = error.extensions as Record<string, unknown>;
+  for (const [key, value] of Object.entries(metadata)) {
+    if (typeof value === "string" && value.length > 0 && !extensionTarget[key]) {
+      extensionTarget[key] = value;
+    }
+  }
+
+  if (!error.originalError || typeof error.originalError !== "object") return;
+  const originalTarget = error.originalError as unknown as Record<string, unknown>;
+  for (const [key, value] of Object.entries(metadata)) {
+    if (typeof value === "string" && value.length > 0 && !originalTarget[key]) {
+      originalTarget[key] = value;
+    }
   }
 }
 
