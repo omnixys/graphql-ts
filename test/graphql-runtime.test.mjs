@@ -175,7 +175,10 @@ test("unknown resolver errors are redacted but retain canonical diagnostics", ()
         new Error("database password leaked"),
       );
 
-      assert.equal(formatted.message, "An unexpected error occurred.");
+      assert.equal(
+        formatted.message,
+        "Application service failed while processing the request.",
+      );
       assert.equal(formatted.extensions.code, "INTERNAL_SERVER_ERROR");
       assert.equal(formatted.extensions.requestId, "request-1");
       assert.equal(formatted.extensions.correlationId, "correlation-1");
@@ -200,6 +203,47 @@ test("wrapped resolver errors retain trace identifiers from originalError", () =
 
   assert.equal(formatted.extensions.traceId, "trace-wrapped");
   assert.equal(formatted.extensions.spanId, "span-wrapped");
+});
+
+test("wrapped resolver errors retain trace identifiers from nested causes", () => {
+  const formatter = createGraphQLFormatError({ serviceName: "authentication" });
+  const cause = Object.assign(new Error("provider unavailable"), {
+    traceId: "trace-cause",
+    spanId: "span-cause",
+    operation: "credentialsLogin",
+  });
+  const original = new Error("authentication failed", { cause });
+  const formatted = formatter(
+    { message: original.message, extensions: {} },
+    new GraphQLError(original.message, { originalError: original }),
+  );
+
+  assert.equal(
+    formatted.message,
+    "Authentication service failed while processing credentialsLogin.",
+  );
+  assert.equal(formatted.extensions.traceId, "trace-cause");
+  assert.equal(formatted.extensions.spanId, "span-cause");
+  assert.equal(formatted.extensions.operation, "credentialsLogin");
+});
+
+test("unknown GraphQL errors derive operation from the error path", () => {
+  const formatted = createGraphQLFormatError({ serviceName: "authentication" })(
+    {
+      message: "provider password leaked",
+      path: ["credentialsLogin"],
+      extensions: {},
+    },
+    new GraphQLError("provider password leaked"),
+  );
+
+  assert.equal(
+    formatted.message,
+    "Authentication service failed while processing credentialsLogin.",
+  );
+  assert.equal(formatted.extensions.operation, "credentialsLogin");
+  assert.equal(formatted.extensions.code, "AUTHENTICATION_INTERNAL_ERROR");
+  assert.equal(formatted.message.includes("password"), false);
 });
 
 test("legacy Nest HTTP exceptions receive stable GraphQL codes", () => {
@@ -245,11 +289,13 @@ test("GraphQL exception filter maps without duplicating request error logs", () 
     Object.assign(new Error("Unauthorized tenant"), {
       code: "UNAUTHORIZED_TENANT",
       requestId: "request-3",
+      traceId: "trace-filter",
     }),
   );
 
   assert.equal(mapped.extensions.code, "UNAUTHORIZED_TENANT");
   assert.equal(mapped.extensions.requestId, "request-3");
+  assert.equal(mapped.extensions.traceId, "trace-filter");
   assert.equal(calls.length, 0);
 });
 
@@ -280,19 +326,24 @@ test("GraphQL extensions contain only the public error contract", () => {
     domainError,
   );
 
-  assert.deepEqual(Object.keys(mapped.extensions).sort(), [
-    "code",
-    "correlationId",
-    "httpStatus",
-    "metadata",
-    "operation",
-    "requestId",
-    "retryable",
-    "service",
-    "summary",
-    "timestamp",
-    "traceId",
-  ].filter((key) => mapped.extensions[key] !== undefined).sort());
+  assert.deepEqual(
+    Object.keys(mapped.extensions).sort(),
+    [
+      "code",
+      "correlationId",
+      "httpStatus",
+      "metadata",
+      "operation",
+      "requestId",
+      "retryable",
+      "service",
+      "summary",
+      "timestamp",
+      "traceId",
+    ]
+      .filter((key) => mapped.extensions[key] !== undefined)
+      .sort(),
+  );
   assert.deepEqual(mapped.extensions.metadata, { userId: "user-1" });
   const json = JSON.stringify(mapped);
   assert.equal(json.includes("actor-secret"), false);

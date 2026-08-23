@@ -17,6 +17,7 @@ export interface FrameworkErrorLike {
   readonly correlationId?: string;
   readonly traceId?: string;
   readonly spanId?: string;
+  readonly operation?: string;
   readonly metadata?: Readonly<Record<string, unknown>>;
   readonly summary?: string;
   readonly httpStatus?: number;
@@ -148,36 +149,50 @@ export function toGraphQLError(
       error.extensions,
     );
     return new GraphQLError(
-      options.exposeInternalErrors || (isKnownErrorCode(rawCode) && httpStatus < 500)
+      options.exposeInternalErrors ||
+        (isKnownErrorCode(rawCode) && httpStatus < 500)
         ? error.message
-        : definition.defaultMessage,
+        : publicInternalMessage(
+            serviceOf(options.serviceName),
+            operationOf(
+              error.extensions,
+              error.path,
+              traceContextOf(error.originalError),
+            ),
+          ),
       {
-      nodes: error.nodes,
-      source: error.source,
-      positions: error.positions,
-      path: error.path,
-      originalError: error.originalError,
-      extensions: {
-        code,
-        summary: stringOf(error.extensions.summary) ?? definition.summary,
-        httpStatus,
-        retryable:
-          booleanOf(error.extensions.retryable) ?? definition.retryable,
-        service: serviceOf(options.serviceName),
-        operation: operationOf(),
-        ...context,
-        timestamp: timestampOf(error.extensions.timestamp),
-        metadata: meta,
-      },
+        nodes: error.nodes,
+        source: error.source,
+        positions: error.positions,
+        path: error.path,
+        originalError: error.originalError,
+        extensions: {
+          code,
+          summary: stringOf(error.extensions.summary) ?? definition.summary,
+          httpStatus,
+          retryable:
+            booleanOf(error.extensions.retryable) ?? definition.retryable,
+          service: serviceOf(options.serviceName),
+          operation: operationOf(
+            error.extensions,
+            error.path,
+            traceContextOf(error.originalError),
+          ),
+          ...context,
+          timestamp: timestampOf(error.extensions.timestamp),
+          metadata: meta,
+        },
       },
     );
   }
   const structured = structuredError(
     error instanceof GraphQLError ? error.originalError : error,
   );
+  const sourceError =
+    error instanceof GraphQLError ? error.originalError : error;
   const httpException = httpExceptionOf(error);
   const mappedHttpStatus = httpException?.getStatus();
-  const context = errorContext(structured);
+  const context = errorContext(structured ?? traceContextOf(sourceError));
   const code =
     structured?.code ??
     (mappedHttpStatus
@@ -188,8 +203,15 @@ export function toGraphQLError(
     structured?.httpStatus ?? mappedHttpStatus ?? definition.httpStatus;
   const message =
     options.exposeInternalErrors || httpStatus < 500
-      ? structured?.message ?? messageOf(error)
-      : definition.defaultMessage;
+      ? (structured?.message ?? messageOf(error))
+      : publicInternalMessage(
+          serviceOf(options.serviceName),
+          operationOf(
+            undefined,
+            undefined,
+            structured ?? traceContextOf(sourceError),
+          ),
+        );
   const meta = publicMetadata(code, structured?.metadata);
 
   return new GraphQLError(message, {
@@ -215,16 +237,25 @@ export function createGraphQLFormatError(
     const graphQLError = error instanceof GraphQLError ? error : undefined;
     const original = graphQLError?.originalError ?? error;
     const structured = structuredError(original);
-    const httpException = original instanceof HttpException ? original : undefined;
+    const httpException =
+      original instanceof HttpException ? original : undefined;
     const rawCode =
       structured?.code ??
-      (httpException ? codeForHttpStatus(httpException.getStatus()) : undefined) ??
+      (httpException
+        ? codeForHttpStatus(httpException.getStatus())
+        : undefined) ??
       (typeof formatted.extensions?.code === "string"
         ? formatted.extensions.code
         : internalCodeForService(options.serviceName));
     const code = normalizeGraphQLErrorCode(rawCode, options.serviceName);
     const definition = getErrorDefinition(code);
-    const safeClientError = structured !== undefined || isKnownErrorCode(rawCode);
+    const safeClientError =
+      structured !== undefined || isKnownErrorCode(rawCode);
+    const operation = operationOf(
+      formatted.extensions,
+      formatted.path,
+      structured ?? traceContextOf(original),
+    );
     const context = errorContext(
       structured ?? traceContextOf(original),
       formatted.extensions,
@@ -242,7 +273,7 @@ export function createGraphQLFormatError(
         options.exposeInternalErrors ||
         (safeClientError && definition.httpStatus < 500)
           ? formatted.message
-          : definition.defaultMessage,
+          : publicInternalMessage(serviceOf(options.serviceName), operation),
       extensions: {
         code,
         summary:
@@ -257,14 +288,13 @@ export function createGraphQLFormatError(
           structured?.retryable ??
           booleanOf(formatted.extensions?.retryable) ??
           definition.retryable,
-        service:
-          options.preserveSafeSubgraphExtensions
-            ? stringOf(formatted.extensions?.service) ?? serviceOf(options.serviceName)
-            : serviceOf(options.serviceName),
-        operation:
-          options.preserveSafeSubgraphExtensions
-            ? stringOf(formatted.extensions?.operation) ?? operationOf()
-            : operationOf(),
+        service: options.preserveSafeSubgraphExtensions
+          ? (stringOf(formatted.extensions?.service) ??
+            serviceOf(options.serviceName))
+          : serviceOf(options.serviceName),
+        operation: options.preserveSafeSubgraphExtensions
+          ? (stringOf(formatted.extensions?.operation) ?? operation)
+          : operation,
         ...context,
         timestamp: timestampOf(formatted.extensions?.timestamp),
         metadata: meta,
@@ -275,7 +305,10 @@ export function createGraphQLFormatError(
 
 function httpExceptionOf(error: unknown): HttpException | undefined {
   if (error instanceof HttpException) return error;
-  if (error instanceof GraphQLError && error.originalError instanceof HttpException) {
+  if (
+    error instanceof GraphQLError &&
+    error.originalError instanceof HttpException
+  ) {
     return error.originalError;
   }
   return undefined;
@@ -361,20 +394,37 @@ function structuredError(value: unknown): FrameworkErrorLike | undefined {
 }
 
 function traceContextOf(value: unknown): FrameworkErrorLike | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  const candidate = value as {
-    traceId?: unknown;
-    spanId?: unknown;
-  };
-  return typeof candidate.traceId === "string" || typeof candidate.spanId === "string"
-    ? {
+  const seen = new Set<object>();
+  let current = value;
+  let traceId: string | undefined;
+  let spanId: string | undefined;
+
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const candidate = current as {
+      traceId?: unknown;
+      spanId?: unknown;
+      operation?: unknown;
+      originalError?: unknown;
+      cause?: unknown;
+    };
+    traceId ??= stringOf(candidate.traceId);
+    spanId ??= stringOf(candidate.spanId);
+    const operation = stringOf(candidate.operation);
+    if (traceId || spanId) {
+      return {
         code: ErrorCode.INTERNAL_SERVER_ERROR,
         message: "Internal server error",
-        traceId: stringOf(candidate.traceId),
-        spanId: stringOf(candidate.spanId),
+        traceId,
+        spanId,
+        operation,
         metadata: {},
-      }
-    : undefined;
+      };
+    }
+    current = candidate.originalError ?? candidate.cause;
+  }
+
+  return undefined;
 }
 
 function errorContext(
@@ -457,12 +507,18 @@ function sanitizeValue(
       .filter((entry) => entry !== undefined);
   }
   if (value && typeof value === "object") {
-    return sanitizeRecord(value as Readonly<Record<string, unknown>>, depth, seen);
+    return sanitizeRecord(
+      value as Readonly<Record<string, unknown>>,
+      depth,
+      seen,
+    );
   }
   return undefined;
 }
 
-function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
+function recordOf(
+  value: unknown,
+): Readonly<Record<string, unknown>> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Readonly<Record<string, unknown>>)
     : undefined;
@@ -492,8 +548,29 @@ function serviceOf(configured?: string): string {
     .replace(/_/g, "-");
 }
 
-function operationOf(): string {
-  return ContextAccessor.get()?.transport?.operation ?? "unknown";
+function operationOf(
+  extensions?: Readonly<Record<string, unknown>>,
+  path?: readonly (string | number)[],
+  error?: FrameworkErrorLike,
+): string {
+  return (
+    stringOf(extensions?.operation) ??
+    stringOf(error?.operation) ??
+    ContextAccessor.get()?.transport?.operation ??
+    (typeof path?.[0] === "string" ? path[0] : undefined) ??
+    "unknown"
+  );
+}
+
+function publicInternalMessage(service: string, operation: string): string {
+  const normalizedService = service === "unknown" ? "Application" : service;
+  const normalizedOperation =
+    operation === "unknown" ? "the request" : operation;
+  const displayService = normalizedService
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+  return `${displayService} service failed while processing ${normalizedOperation}.`;
 }
 
 function stringOf(value: unknown): string | undefined {
