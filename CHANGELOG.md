@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.8](https://github.com/omnixys/graphql-ts/compare/v3.1.7...v3.1.8) (2026-08-24)
+
+### Context
+
+* **Context:** update dependency ([](https://github.com/omnixys/graphql-ts/commit/ecc439661b98bbedaf76e51909407fdd2e85a559))
+
 ## [3.1.7](https://github.com/omnixys/graphql-ts/compare/v3.1.6...v3.1.7) (2026-08-23)
 
 ### Context
