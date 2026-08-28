@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [3.1.9](https://github.com/omnixys/graphql-ts/compare/v3.1.8...v3.1.9) (2026-08-28)
+
+### Deps
+
+* **Deps:** update contracts-ts ([](https://github.com/omnixys/graphql-ts/commit/687852cb1c38695b01861c45648e1b2ba713dad1))
+
 ## [3.1.8](https://github.com/omnixys/graphql-ts/compare/v3.1.7...v3.1.8) (2026-08-24)
 
 ### Context
