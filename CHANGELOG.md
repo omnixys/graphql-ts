@@ -3,6 +3,26 @@
 All notable changes in this project will be documented in this file.
 
 
+## [4.0.0](https://github.com/omnixys/graphql-ts/compare/v3.1.9...v4.0.0) (2026-09-02)
+
+### Ci
+
+* **Ci:** add missing labeler and dependabot config to match contracts ([](https://github.com/omnixys/graphql-ts/commit/6ce10bdac6f4fec5cd8f739110aa8454747433ed))
+* **Ci:** add PR build check workflow for main ([](https://github.com/omnixys/graphql-ts/commit/d813fdee7e3c9e4e7cc6e8d6437ef54be3a206e4))
+* **Ci:** add npm registry auth before install in release workflow ([](https://github.com/omnixys/graphql-ts/commit/da075c89cc8a17162a78b27ad7a2da201e71a7cc))
+
+### Deps
+
+* **Deps:** update omnixys deps ([](https://github.com/omnixys/graphql-ts/commit/b751386697d5808cd5f85fb9ce6580d8c239e926))
+
+### Other
+
+* **Other:** Merge pull request #1 from omnixys/migration/uuid-v7 ([](https://github.com/omnixys/graphql-ts/commit/d9103e12f0410825403f73f599ea971583b50fe1)), closes [#1](https://github.com/omnixys/graphql-ts/issues/1)
+
+### Runtime
+
+* **Runtime:** require node 26.8.1 and pnpm 11.24.0 ([](https://github.com/omnixys/graphql-ts/commit/491b2b8792a7af70ca09b3646e4b11f48a7c4b30))
+
 ## [3.1.9](https://github.com/omnixys/graphql-ts/compare/v3.1.8...v3.1.9) (2026-08-28)
 
 ### Deps
