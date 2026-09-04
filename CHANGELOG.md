@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [4.1.0](https://github.com/omnixys/graphql-ts/compare/v4.0.0...v4.1.0) (2026-09-04)
+
+### Log
+
+* **Log:** add logger ([](https://github.com/omnixys/graphql-ts/commit/4bb230d4e1c92b3bcd04947685041df0ef863181))
+
 ## [4.0.0](https://github.com/omnixys/graphql-ts/compare/v3.1.9...v4.0.0) (2026-09-02)
 
 ### Ci
