@@ -28,6 +28,7 @@ export interface FrameworkErrorLike {
 
 export interface GraphQLExceptionMappingOptions {
   readonly exposeInternalErrors?: boolean;
+  readonly exposeValidationDetails?: boolean;
   readonly serviceName?: string;
   readonly preserveSafeSubgraphExtensions?: boolean;
 }
@@ -274,23 +275,41 @@ export function createGraphQLFormatError(
         recordOf(formatted.extensions?.details),
     );
 
+    const httpStatus =
+      structured?.httpStatus ??
+      numberOf(formatted.extensions?.httpStatus) ??
+      definition.httpStatus;
+
+    const maskedMessage = publicInternalMessage(
+      serviceOf(options.serviceName),
+      operation,
+    );
+    const revealValidationDetails =
+      options.exposeValidationDetails === true &&
+      code === ErrorCode.VALIDATION_ERROR &&
+      httpStatus < 500 &&
+      typeof formatted.message === "string" &&
+      formatted.message.length > 0 &&
+      formatted.message !== maskedMessage;
+
+    const details = revealValidationDetails
+      ? sanitizeDetails({ details: formatted.message })
+      : undefined;
+
     return {
       ...formatted,
       message:
         options.exposeInternalErrors ||
-        (safeClientError && definition.httpStatus < 500)
+        (safeClientError && httpStatus < 500)
           ? formatted.message
-          : publicInternalMessage(serviceOf(options.serviceName), operation),
+          : maskedMessage,
       extensions: {
         code,
         summary:
           structured?.summary ??
           stringOf(formatted.extensions?.summary) ??
           definition.summary,
-        httpStatus:
-          structured?.httpStatus ??
-          numberOf(formatted.extensions?.httpStatus) ??
-          definition.httpStatus,
+        httpStatus,
         retryable:
           structured?.retryable ??
           booleanOf(formatted.extensions?.retryable) ??
@@ -304,7 +323,12 @@ export function createGraphQLFormatError(
           : operation,
         ...context,
         timestamp: timestampOf(formatted.extensions?.timestamp),
-        metadata: meta,
+        metadata: details
+          ? {
+              ...meta,
+              details: details.details,
+            }
+          : meta,
       },
     };
   };
