@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [4.2.0](https://github.com/omnixys/graphql-ts/compare/v4.1.0...v4.2.0) (2026-09-08)
+
+### Graphql
+
+* **Graphql:** expose validation details in error extensions ([](https://github.com/omnixys/graphql-ts/commit/08d44de7cacdecc7c9037babb0160d79a06a5f49))
+
 ## [4.1.0](https://github.com/omnixys/graphql-ts/compare/v4.0.0...v4.1.0) (2026-09-04)
 
 ### Log
