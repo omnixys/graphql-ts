@@ -61,3 +61,52 @@ test('internal errors never leak details even when validation details are enable
   assert.equal(formatted.extensions.metadata.details, undefined);
   assert.notEqual(formatted.extensions.httpStatus, 400);
 });
+
+test('internal errors include reason in metadata with the original error message', () => {
+  const error = new GraphQLError("Cannot query field 'foo' on type 'Bar'.", {
+    originalError: new Error("Cannot query field 'foo' on type 'Bar'."),
+    path: ['Query', 'foo'],
+  });
+  const formatted = createGraphQLFormatError({
+    serviceName: 'gateway',
+    exposeValidationDetails: true,
+  })(
+    { message: error.message, path: error.path, extensions: { code: 'INTERNAL_SERVER_ERROR' } },
+    error,
+  );
+
+  assert.equal(formatted.extensions.httpStatus, 500);
+  assert.match(formatted.message, /failed while processing/);
+  assert.match(formatted.extensions.metadata.reason, /Cannot query field 'foo' on type 'Bar'/);
+});
+
+test('GATEWAY_INTERNAL_ERROR from unknown code includes reason in metadata', () => {
+  const error = new GraphQLError('some resolver blew up', {
+    originalError: new Error('some resolver blew up'),
+    path: ['CreateEvent'],
+  });
+  const formatted = createGraphQLFormatError({ serviceName: 'gateway' })(
+    { message: error.message, path: error.path, extensions: { code: 'SOME_UNKNOWN_CODE' } },
+    error,
+  );
+
+  assert.equal(formatted.extensions.code, 'GATEWAY_INTERNAL_ERROR');
+  assert.equal(formatted.extensions.httpStatus, 500);
+  assert.match(formatted.extensions.metadata.reason, /some resolver blew up/);
+});
+
+test('validation errors (400) do not include reason in metadata', () => {
+  const error = new GraphQLError("Unknown field 'plusOneAgeCategory'.", {
+    path: ['CreateInvitationFromRsvp'],
+  });
+  const formatted = createGraphQLFormatError({
+    serviceName: 'gateway',
+    exposeValidationDetails: true,
+  })(
+    { message: error.message, path: error.path, extensions: { code: 'BAD_USER_INPUT' } },
+    error,
+  );
+
+  assert.equal(formatted.extensions.httpStatus, 400);
+  assert.equal(formatted.extensions.metadata.reason, undefined);
+});

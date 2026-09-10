@@ -296,6 +296,9 @@ export function createGraphQLFormatError(
       ? sanitizeDetails({ details: formatted.message })
       : undefined;
 
+    const internalReason =
+      httpStatus >= 500 ? sanitizeDetails({ reason: messageOf(original) }) : undefined;
+
     return {
       ...formatted,
       message:
@@ -327,8 +330,11 @@ export function createGraphQLFormatError(
           ? {
               ...meta,
               details: details.details,
+              ...(internalReason ? { reason: internalReason.reason } : {}),
             }
-          : meta,
+          : internalReason
+            ? { ...meta, reason: internalReason.reason }
+            : meta,
       },
     };
   };
