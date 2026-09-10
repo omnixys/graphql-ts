@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [4.3.0](https://github.com/omnixys/graphql-ts/compare/v4.2.0...v4.3.0) (2026-09-10)
+
+### Graphql
+
+* **Graphql:** expose error reason in metadata for 5xx internal errors ([](https://github.com/omnixys/graphql-ts/commit/466da7c8a403ee40b0a2cc0409d95b70c9e697e9))
+
 ## [4.2.0](https://github.com/omnixys/graphql-ts/compare/v4.1.0...v4.2.0) (2026-09-08)
 
 ### Graphql
