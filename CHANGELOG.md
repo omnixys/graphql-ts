@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [4.4.0](https://github.com/omnixys/graphql-ts/compare/v4.3.0...v4.4.0) (2026-09-12)
+
+### Graphql
+
+* **Graphql:** preserve structured reason in 5xx error metadata ([](https://github.com/omnixys/graphql-ts/commit/17425a16287eda459dc02ffced141de1a54a258a))
+
 ## [4.3.0](https://github.com/omnixys/graphql-ts/compare/v4.2.0...v4.3.0) (2026-09-10)
 
 ### Graphql
