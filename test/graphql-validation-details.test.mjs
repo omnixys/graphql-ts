@@ -80,6 +80,33 @@ test('internal errors include reason in metadata with the original error message
   assert.match(formatted.extensions.metadata.reason, /Cannot query field 'foo' on type 'Bar'/);
 });
 
+test('structured 5xx reason is preserved over the raw error message', () => {
+  const error = new GraphQLError('Guest sign-up could not be completed', {
+    originalError: new Error('Guest sign-up could not be completed'),
+    path: ['verifyGuestSignUp'],
+  });
+  const formatted = createGraphQLFormatError({ serviceName: 'gateway' })(
+    {
+      message: error.message,
+      path: error.path,
+      extensions: {
+        code: 'GATEWAY_INTERNAL_ERROR',
+        httpStatus: 500,
+        retryable: false,
+        summary: 'Gateway error.',
+        metadata: { reason: 'provisioning-incomplete' },
+      },
+    },
+    error,
+  );
+
+  assert.equal(formatted.extensions.code, 'GATEWAY_INTERNAL_ERROR');
+  assert.equal(formatted.extensions.httpStatus, 500);
+  assert.equal(formatted.extensions.retryable, false);
+  assert.equal(formatted.extensions.metadata.reason, 'provisioning-incomplete');
+  assert.match(formatted.message, /failed while processing/);
+});
+
 test('GATEWAY_INTERNAL_ERROR from unknown code includes reason in metadata', () => {
   const error = new GraphQLError('some resolver blew up', {
     originalError: new Error('some resolver blew up'),
