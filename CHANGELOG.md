@@ -3,6 +3,12 @@
 All notable changes in this project will be documented in this file.
 
 
+## [4.4.1](https://github.com/omnixys/graphql-ts/compare/v4.4.0...v4.4.1) (2026-09-13)
+
+### Deps
+
+* **Deps:** update contract-ts vers. ([](https://github.com/omnixys/graphql-ts/commit/76dee7666845e04b55ee02bbafc3cacdb8c95c66))
+
 ## [4.4.0](https://github.com/omnixys/graphql-ts/compare/v4.3.0...v4.4.0) (2026-09-12)
 
 ### Graphql
